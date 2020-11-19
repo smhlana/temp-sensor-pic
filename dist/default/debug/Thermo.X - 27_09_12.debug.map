@@ -1,0 +1,136 @@
+MPLINK 5.08, LINKER
+Linker Map File - Created Mon Sep 28 22:03:51 2015
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000002
+                   .cinit    romdata   0x000001    program   0x000004
+                   .org_2       code   0x000004    program   0x000314
+.config_2007_BUILD/DEFAULT/DEBUG/D_THERMO.O       code   0x002007    program   0x000002
+                   .org_1       code   0x002100    program   0x000004
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000002      
+                            0x000004    0x00018d      
+                            0x002007    0x002007      
+                            0x002100    0x002101      
+            400 out of 4359 program addresses used, program memory utilization is 9%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                 AlarmOFF   0x000119    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  AlarmON   0x00010f    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    Begin   0x000180    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  Bin2Bcd   0x00014a    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+             Bin2BcdStart   0x000143    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Check1   0x000164    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Check2   0x00016e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  CheckB7   0x0000b9    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 CheckB7H   0x0000f3    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+           CheckIfGreater   0x000164    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+        CheckIfGreaterEnd   0x000178    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               CheckMyREG   0x0000c2    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+              CheckMyREGH   0x0000fc    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+              Concatenate   0x00015e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Del1ms   0x000179    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    Delay   0x00017e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighDeb1   0x0000d0    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighDeb2   0x0000e6    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighDeb3   0x000100    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighLoop   0x0000d6    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   ISREND   0x00002c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    LoadW   0x00008f    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   LookUp   0x000138    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                     Loop   0x00004e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowDeb1   0x000096    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowDeb2   0x0000ac    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowDeb3   0x0000c6    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowLoop   0x00009c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                     PWMH   0x000117    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                     PWML   0x000115    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               ReadEEPROM   0x00006b    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Sample   0x00012c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               SampleTime   0x000187    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  SetHigh   0x0000cd    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               SetHighEND   0x000104    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   SetLow   0x000093    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                SetLowEND   0x0000ca    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    Setup   0x000032    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                SetupTMR2   0x00011c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  TMR0ISR   0x00000f    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  TMR1ISR   0x000020    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  TMR2ISR   0x000027    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+           ValidateLimits   0x000107    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+              WriteEEPROM   0x000077    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+             _.org_2_0084   0x000084    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+             _.org_2_0132   0x000132    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  add3to1   0x00016c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  add3to2   0x000176    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  loop1ms   0x00017a    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  loopDel   0x000181    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                  TMR0ISR   0x00000f    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  TMR1ISR   0x000020    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  TMR2ISR   0x000027    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   ISREND   0x00002c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    Setup   0x000032    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                     Loop   0x00004e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               ReadEEPROM   0x00006b    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+              WriteEEPROM   0x000077    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+             _.org_2_0084   0x000084    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    LoadW   0x00008f    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   SetLow   0x000093    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowDeb1   0x000096    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowLoop   0x00009c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowDeb2   0x0000ac    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  CheckB7   0x0000b9    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               CheckMyREG   0x0000c2    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  LowDeb3   0x0000c6    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                SetLowEND   0x0000ca    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  SetHigh   0x0000cd    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighDeb1   0x0000d0    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighLoop   0x0000d6    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighDeb2   0x0000e6    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 CheckB7H   0x0000f3    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+              CheckMyREGH   0x0000fc    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 HighDeb3   0x000100    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               SetHighEND   0x000104    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+           ValidateLimits   0x000107    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  AlarmON   0x00010f    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                     PWML   0x000115    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                     PWMH   0x000117    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                 AlarmOFF   0x000119    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                SetupTMR2   0x00011c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Sample   0x00012c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+             _.org_2_0132   0x000132    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   LookUp   0x000138    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+             Bin2BcdStart   0x000143    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  Bin2Bcd   0x00014a    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+              Concatenate   0x00015e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Check1   0x000164    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+           CheckIfGreater   0x000164    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  add3to1   0x00016c    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Check2   0x00016e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  add3to2   0x000176    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+        CheckIfGreaterEnd   0x000178    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                   Del1ms   0x000179    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  loop1ms   0x00017a    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    Delay   0x00017e    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                    Begin   0x000180    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+                  loopDel   0x000181    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+               SampleTime   0x000187    program     static C:\Users\Admin\MPLABXProjects\GREAT\Thermo.X - 27_09_12\D_Thermo.asm
+
+

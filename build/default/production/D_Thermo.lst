@@ -1,0 +1,1252 @@
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+2007   33C4           00001     __CONFIG  _CP_OFF & _CPD_OFF & _PWRTE_ON & _WDT_OFF & _INTRC_OSC_NOCLKOUT & _MCLRE_OFF & _FCMEN_OFF 
+                            & _IESO_OFF
+                      00002                 LIST        P = 16F690
+                      00003     #include "P16F690.inc"
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ; Build date : Apr 06 2015
+                      00005 ;  MPASM PIC16F690 processor include
+                      00006 ; 
+                      00007 ;  (c) Copyright 1999-2015 Microchip Technology, All rights reserved
+                      00008 ;==========================================================================
+                      00009 
+                      00757         LIST
+                      00004     errorlevel -302     ; suppress the bank sel check warnings
+                      00005 
+                      00006 ;**********REGISTERS LABEL EQUATES**********************************************
+  00000000            00007 W           EQU 00h
+  00000001            00008 GO          EQU 01h
+  00000020            00009 UNITS       EQU 20h
+  00000021            00010 TENS        EQU 21h
+  00000022            00011 REG0        EQU 22h
+  00000023            00012 REG1        EQU 23h
+  00000024            00013 REG2        EQU 24h
+  00000025            00014 CSTATUS     EQU 25h
+  00000026            00015 COUNT       EQU 26h
+  00000027            00016 ADVALUE     EQU 27h
+  00000028            00017 W_TEMP      EQU 28h
+  00000029            00018 DELLOOP     EQU 29h
+  0000002A            00019 LEVEL       EQU 2Ah
+  0000002B            00020 LowLEVEL    EQU 2Bh
+  0000002C            00021 HighLEVEL   EQU 2Ch
+  0000002D            00022 MyREG       EQU 2Dh
+  0000002E            00023 SetCOUNT    EQU 2Eh
+  0000002F            00024 SetAlarm    EQU 2Fh
+  00000030            00025 W_TEMP2     EQU 30h
+                      00026 ;*******************************************************************************
+                      00027 
+                      00028 ;**********BEGIN****************************************************************
+                      00029         ORG     0x00    ; Program Start address
+0000   2???           00030         goto    Setup   ; Jump to program setup
+                      00031 ;*******************************************************************************
+                      00032 
+                      00033 ;**********INITIAL TEMPERATURE VALUES*******************************************
+                      00034         ORG     0x2100
+2100   0014 0019      00035         DE      14,19
+                      00036 ;*******************************************************************************
+                      00037         
+                      00038 ;**********ISR******************************************************************
+                      00039         ORG         0x04            ; ISR starting address
+0004   0064           00040         clrwdt                      ; Clear Watch Dog Timer
+0005   00A8           00041         movwf       W_TEMP          ; Context saving of WREG
+0006   1283           00042         bcf         STATUS,RP0       ; Bank0
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0007   1303           00043         bcf         STATUS,RP1
+0008   190B           00044         btfsc       INTCON,T0IF     ; Check which ISR to run
+0009   2???           00045         goto        TMR0ISR
+000A   188C           00046         btfsc       PIR1,TMR2IF     ; No match has occured
+000B   2???           00047         goto        TMR2ISR
+000C   1810           00048         btfsc       T1CON,TMR1ON
+000D   2???           00049         goto        TMR1ISR
+000E   2???           00050         goto        ISREND
+                      00051 
+000F   1E8B           00052 TMR0ISR btfss       INTCON,T0IE     ;
+0010   2???           00053         goto        ISREND
+0011   30??           00054         movlw       HIGH LookUp         ;Avoid PCL rollover
+0012   008A           00055         movwf       PCLATH                                ;Move HIGH address of the lookup table into th
+                            is
+0013   0821           00056         movf        TENS,W            
+0014   2???           00057         call        LookUp                                 ;Lookup table
+0015   0087           00058         movwf       PORTC
+0016   3010           00059         movlw       b'00010000'     ; Enable TENS SSD in PORTB
+0017   0086           00060         movwf       PORTB
+0018   2???           00061         call        Del1ms          ; Time delay to allow the SSD to be on
+                      00062 
+0019   0820           00063         movf        UNITS,W         ; Load UNITS value in WREG
+001A   2???           00064         call        LookUp          ; Convert value to BCD for display in PORTC
+001B   0087           00065         movwf       PORTC
+001C   3020           00066         movlw       b'00100000'     ; Enable UNITS SSD in PORTB
+001D   0086           00067         movwf       PORTB
+001E   2???           00068         call        Del1ms          ; Time delay to allow the SSD to be on
+001F   2???           00069         goto        ISREND
+                      00070 
+0020                  00071 TMR1ISR
+Message[305]: Using default destination of 1 (file).
+0020   0BAF           00072         decfsz      SetAlarm
+0021   2???           00073         goto        ISREND
+0022   300F           00074         movlw       d'15'
+0023   00AF           00075         movwf       SetAlarm           ; Timer2 count value
+0024   3002           00076         movlw       02h
+Message[305]: Using default destination of 1 (file).
+0025   06AD           00077         xorwf       MyREG
+0026   2???           00078         goto        ISREND
+                      00079         
+Message[305]: Using default destination of 1 (file).
+0027   0BAE           00080 TMR2ISR decfsz      SetCOUNT
+0028   2???           00081         goto        ISREND
+0029   302E           00082         movlw       d'46'
+002A   00AE           00083         movwf       SetCOUNT           ; Timer2 count value
+002B   102D           00084         bcf         MyREG,0
+                      00085 
+002C   0828           00086 ISREND  movfw       W_TEMP              ; Retrieve contents of WREG from previous routine
+002D   1283           00087         bcf         STATUS,RP0       ; Bank0
+002E   1303           00088         bcf         STATUS,RP1
+002F   110B           00089         bcf         INTCON,T0IF         ; Clear Timer0 Overflow Interrupt Flag
+0030   108C           00090         bcf         PIR1,TMR2IF         ; No match has occured
+0031   0009           00091         retfie
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00092 ;*******************************************************************************
+                      00093 
+                      00094 ;**********SETUP****************************************************************
+0032   1283           00095 Setup   bcf     STATUS,RP0      ; Select Bank 2
+0033   1703           00096         bsf     STATUS,RP1      ; Select Bank 2
+0034   141E           00097         bsf     ANSEL,ANS0      ; Enable analog I/O
+0035   1303           00098         bcf     STATUS,RP1
+0036   1683           00099         bsf     STATUS,RP0      ; Select bank 1
+0037   3030           00100         movlw   b'00110000'     ; Select ADC FRC clock
+0038   009F           00101         movwf   ADCON1
+0039   1405           00102         bsf     TRISA,TRISA0    ; PORTA, 0 as input
+003A   1085           00103         bcf     TRISA,TRISA1
+003B   30C0           00104         movlw   0C0h
+003C   0086           00105         movwf   TRISB       ; PORTB used as control port for multiplexing <4-5>, and button inputs <6-7>
+003D   0187           00106         clrf    TRISC           ; PORTC used for output to SSD
+003E   0181           00107         clrf    OPTION_REG      ;
+003F   1501           00108         bsf     OPTION_REG,PS2  ; Prescalar 100 1:32
+0040   178B           00109         bsf     INTCON,GIE      ; Enable global interrupt
+0041   168B           00110         bsf     INTCON,T0IE     ; Enable Timer0 Overflow Interrupt
+0042   170B           00111         bsf     INTCON,PEIE
+0043   1283           00112         bcf     STATUS,RP0  ; Select Bank 0
+0044   0190           00113         clrf    T1CON
+0045   3081           00114         movlw   0x81        ; ADC result conversion right justified and ADC enabled
+0046   009F           00115         movwf   ADCON0
+0047   01A0           00116         clrf    UNITS
+0048   01A1           00117         clrf    TENS
+0049   300F           00118         movlw   d'15'
+004A   00AF           00119         movwf   SetAlarm           ; Timer1 count value
+004B   302E           00120         movlw   d'46'
+004C   00AE           00121         movwf   SetCOUNT           ; Timer2 count value
+004D   2???           00122         goto    Loop
+                      00123 ;*******************************************************************************
+                      00124 
+                      00125 ;**********MAIN LOOP************************************************************
+004E                  00126 Loop    
+004E   2???           00127         call    Delay           ; 340ms Delay
+004F   2???           00128         call    Delay
+0050   2???           00129         call    Sample          ; Sample analog input and perform ADC
+0051   00B0           00130         movwf   W_TEMP2
+0052   2???           00131         call    Bin2BcdStart    ; Convert ADC result to BCD
+0053   1303           00132         bcf     STATUS,RP1
+0054   1283           00133         bcf     STATUS,RP0      ; Select bank 0
+0055   00A0           00134         movwf   UNITS           ; Save BCD result in UNITS and TENS registers
+0056   00A1           00135         movwf   TENS
+0057   300F           00136         movlw   b'00001111'
+0058   05A0           00137         andwf   UNITS,1         ; UNITS = WREG lower nibble
+0059   0EA1           00138         swapf   TENS,1
+005A   05A1           00139         andwf   TENS,1          ; TENS = WREG higher nibble
+005B   2???           00140         call    Delay
+005C   2???           00141         call    Delay
+                      00142         
+005D   3000           00143         movlw   00h
+005E   2???           00144         call    ReadEEPROM
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+005F   00AB           00145         movwf   LowLEVEL
+                      00146         
+0060   3001           00147         movlw   01h
+0061   2???           00148         call    ReadEEPROM
+0062   00AC           00149         movwf   HighLEVEL
+                      00150         
+0063   0830           00151         movf    W_TEMP2,W
+0064   2???           00152         call    ValidateLimits
+0065   0830           00153         movf    W_TEMP2,W
+                      00154         
+                      00155 
+0066   1F06           00156         btfss   PORTB,6         ; Check if LOW button is pressed
+0067   2???           00157         call    SetLow
+0068   1F86           00158         btfss   PORTB,7         ; Check if HIGH button is pressed
+0069   2???           00159         call    SetHigh
+                      00160 
+006A   2???           00161         goto    Loop            ; Repeat loop indefinetly
+                      00162 ;*******************************************************************************
+                      00163 
+                      00164 ;**********READ EEPROM************************************************************
+006B                  00165 ReadEEPROM
+006B   1283 1703      00166         BANKSEL EEADR               ;
+006D   008D           00167         MOVWF   EEADR               ;Data Memory Address to read
+006E   1683 1703      00168         BANKSEL EECON1              ;
+0070   138C           00169         BCF     EECON1,EEPGD        ;Point to DATA memory
+0071   140C           00170         BSF     EECON1,RD           ;EE Read
+0072   1283 1703      00171         BANKSEL EEDAT               ;
+0074   080C           00172         MOVF    EEDAT,W             ;W = EEDAT
+0075   1303           00173         BCF     STATUS,RP1          ;Bank 0
+0076   0008           00174         return
+                      00175 ;*******************************************************************************
+                      00176 
+                      00177 ;**********WRITE EEPROM************************************************************
+0077                  00178 WriteEEPROM
+0077   1283 1703      00179         BANKSEL EEADR ;
+0079   008D           00180         MOVWF   EEADR ;Data Memory Address to write
+007A   2???           00181         call    LoadW
+007B   1283 1703      00182         BANKSEL EEDAT ;
+007D   008C           00183         MOVWF   EEDAT ;Data Memory Value to write
+007E   1683 1703      00184         BANKSEL EECON1 ;
+0080   138C           00185         BCF     EECON1, EEPGD ;Point to DATA memory
+0081   150C           00186         BSF     EECON1, WREN ;Enable writes
+0082   138B           00187         BCF     INTCON, GIE ;Disable INTs.
+0083   1B8B           00188         BTFSC   INTCON, GIE ;SEE AN576
+0084   2???           00189         GOTO    $-2
+0085   3055           00190         MOVLW   55h ;
+0086   008D           00191         MOVWF   EECON2 ;Write 55h
+0087   30AA           00192         MOVLW   0AAh ;
+0088   008D           00193         MOVWF   EECON2 ;Write AAh
+0089   148C           00194         BSF     EECON1, WR ;Set WR bit to begin write
+008A   178B           00195         BSF     INTCON, GIE ;Enable INTs.
+008B   110C           00196         BCF     EECON1, WREN ;Disable writes
+008C   1283 1303      00197         BANKSEL 0x00 ;Bank 0
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+008E   0008           00198         return
+                      00199 ;*******************************************************************************
+                      00200 
+                      00201 ;**********LOAD W WITH LEVEL****************************************************
+008F   1283           00202 LoadW   BCF     STATUS,RP0
+0090   1303           00203         BCF     STATUS,RP1
+0091   082A           00204         movf    LEVEL,W
+0092   0008           00205         return
+                      00206 ;*******************************************************************************        
+                      00207 
+                      00208 ;*******************************SET TEMP****************************************
+                      00209 ;**********SET LOW TEMP*********************************************************
+0093   142D           00210 SetLow  bsf     MyREG,0
+0094   3006           00211         movlw   d'6'
+0095   00A9           00212         movwf   DELLOOP
+0096   2???           00213 LowDeb1 call    Delay           ; 340ms*6 = 2.04s
+Message[305]: Using default destination of 1 (file).
+0097   0BA9           00214         decfsz  DELLOOP         ; Button debouncing
+0098   2???           00215         goto    LowDeb1
+                      00216 
+0099   1B06           00217         btfsc   PORTB,6         ; Check if LOW button is still pressed
+009A   0008           00218         return
+                      00219 
+009B   2???           00220         call    SetupTMR2
+009C   3000           00221 LowLoop movlw   00h
+009D   2???           00222         call    ReadEEPROM
+009E   00AB           00223         movwf   LowLEVEL
+009F   2???           00224         call    Bin2BcdStart    ; Convert low temperature level to BCD
+00A0   1303           00225         bcf     STATUS,RP1
+00A1   1283           00226         bcf     STATUS,RP0      ; Select bank 0
+00A2   00A0           00227         movwf   UNITS           ; Save BCD result in UNITS and TENS registers
+00A3   00A1           00228         movwf   TENS
+00A4   300F           00229         movlw   b'00001111'
+00A5   05A0           00230         andwf   UNITS,1         ; UNITS = WREG lower nibble
+00A6   0EA1           00231         swapf   TENS,1
+00A7   05A1           00232         andwf   TENS,1          ; TENS = WREG higher nibble
+                      00233 
+00A8   128B           00234         bcf     INTCON,T0IE     ; Disable Timer0 Overflow Interrupt
+00A9   0186           00235         clrf    PORTB           ; Turn off  SSDs (flash)
+                      00236 
+00AA   3003           00237         movlw   d'3'
+00AB   00A9           00238         movwf   DELLOOP         ; 1s delay for flashing
+00AC   2???           00239 LowDeb2 call    Delay           ; 340ms*3 = 1.02s
+Message[305]: Using default destination of 1 (file).
+00AD   0BA9           00240         decfsz  DELLOOP         ;
+00AE   2???           00241         goto    LowDeb2
+                      00242 
+00AF   168B           00243         bsf     INTCON,T0IE     ; Enable Timer0 Overflow Interrupt (Flash)
+                      00244 
+                      00245         ; Setting the temperature
+00B0   1B06           00246         btfsc   PORTB,6         ; Is LOW button pressed?
+00B1   2???           00247         goto    CheckB7         ; Is 3s cycle over?
+Message[305]: Using default destination of 1 (file).
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00B2   03AB           00248         decf    LowLEVEL        ; If LOW button is pressed, decrement low limit
+00B3   082B           00249         movf    LowLEVEL,W
+00B4   00AA           00250         movwf   LEVEL
+00B5   3000           00251         movlw   00h
+00B6   2???           00252         call    WriteEEPROM
+00B7   302E           00253         movlw   d'46'           ; Continue 3s cycle
+00B8   00AE           00254         movwf   SetCOUNT
+                      00255 
+00B9   1B86           00256 CheckB7 btfsc   PORTB,7         ; Is HIGH button pressed?
+00BA   2???           00257         goto    CheckMyREG      ; Is 3s cycle over?
+Message[305]: Using default destination of 1 (file).
+00BB   0AAB           00258         incf    LowLEVEL        ; If HIGH button is pressed, increment low limit
+00BC   082B           00259         movf    LowLEVEL,W
+00BD   00AA           00260         movwf   LEVEL
+00BE   3000           00261         movlw   00h
+00BF   2???           00262         call    WriteEEPROM
+00C0   302E           00263         movlw   d'46'           ; Continue 3s cycle
+00C1   00AE           00264         movwf   SetCOUNT
+                      00265 
+00C2                  00266 CheckMyREG
+00C2   1C2D           00267         btfss   MyREG,0         ; If MyReg,0 is cleared, 3 seconds have elapsed
+00C3   2???           00268         goto    SetLowEND       ; therefore end subroutine, else continue
+                      00269 
+00C4   3003           00270         movlw   d'3'
+00C5   00A9           00271         movwf   DELLOOP         ; 1s delay for flashing
+00C6   2???           00272 LowDeb3 call    Delay           ; 340ms*3 = 1.02s
+Message[305]: Using default destination of 1 (file).
+00C7   0BA9           00273         decfsz  DELLOOP         ; Button debouncing
+00C8   2???           00274         goto    LowDeb3
+00C9   2???           00275         goto    LowLoop         ; Repeat loop until Timer2 interrupt (3 second have elapsed)
+                      00276 
+00CA                  00277 SetLowEND
+00CA   1112           00278         bcf     T2CON,TMR2ON    ; Turn off Timer2
+00CB   168B           00279         bsf     INTCON,T0IE     ; Enable Timer0 Overflow Interrupt (Back to normal operation)
+00CC   0008           00280         return
+                      00281 ;*******************************************************************************
+                      00282 
+                      00283 ;**********SET HIGH TEMP********************************************************
+00CD   142D           00284 SetHigh bsf     MyREG,0
+00CE   3006           00285         movlw   d'6'
+00CF   00A9           00286         movwf   DELLOOP
+00D0                  00287 HighDeb1
+00D0   2???           00288         call    Delay           ; 340ms*6 = 2.04s
+Message[305]: Using default destination of 1 (file).
+00D1   0BA9           00289         decfsz  DELLOOP         ; Button debouncing
+00D2   2???           00290         goto    HighDeb1
+                      00291 
+00D3   1B86           00292         btfsc   PORTB,7         ; Check if HIGH button is still pressed
+00D4   0008           00293         return
+                      00294 
+00D5   2???           00295         call    SetupTMR2
+00D6                  00296 HighLoop
+00D6   3001           00297         movlw   01h
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00D7   2???           00298         call    ReadEEPROM
+00D8   00AC           00299         movwf   HighLEVEL
+00D9   2???           00300         call    Bin2BcdStart    ; Convert low temperature level to BCD
+00DA   1303           00301         bcf     STATUS,RP1
+00DB   1283           00302         bcf     STATUS,RP0      ; Select bank 0
+00DC   00A0           00303         movwf   UNITS           ; Save BCD result in UNITS and TENS registers
+00DD   00A1           00304         movwf   TENS
+00DE   300F           00305         movlw   b'00001111'
+00DF   05A0           00306         andwf   UNITS,1         ; UNITS = WREG lower nibble
+00E0   0EA1           00307         swapf   TENS,1
+00E1   05A1           00308         andwf   TENS,1          ; TENS = WREG higher nibble
+                      00309 
+00E2   128B           00310         bcf     INTCON,T0IE     ; Disable Timer0 Overflow Interrupt
+00E3   0186           00311         clrf    PORTB           ; Turn off  SSDs (flash)
+                      00312 
+00E4   3003           00313         movlw   d'3'
+00E5   00A9           00314         movwf   DELLOOP         ; 1s delay for flashing
+00E6                  00315 HighDeb2
+00E6   2???           00316         call    Delay           ; 340ms*3 = 1.02s
+Message[305]: Using default destination of 1 (file).
+00E7   0BA9           00317         decfsz  DELLOOP         ;
+00E8   2???           00318         goto    HighDeb2
+                      00319 
+00E9   168B           00320         bsf     INTCON,T0IE     ; Enable Timer0 Overflow Interrupt (Flash)
+                      00321 
+                      00322         ; Setting the temperature
+00EA   1B06           00323         btfsc   PORTB,6         ; Is LOW button pressed?
+00EB   2???           00324         goto    CheckB7H        ; Is 3s cycle over?
+Message[305]: Using default destination of 1 (file).
+00EC   03AC           00325         decf    HighLEVEL       ; If LOW button is pressed, decrement low limit
+00ED   082C           00326         movf    HighLEVEL,W
+00EE   00AA           00327         movwf   LEVEL
+00EF   3001           00328         movlw   01h
+00F0   2???           00329         call    WriteEEPROM
+00F1   302E           00330         movlw   d'46'           ; Continue 3s cycle
+00F2   00AE           00331         movwf   SetCOUNT
+                      00332 
+00F3                  00333 CheckB7H
+00F3   1B86           00334         btfsc   PORTB,7         ; Is HIGH button pressed?
+00F4   2???           00335         goto    CheckMyREGH     ; Is 3s cycle over?
+Message[305]: Using default destination of 1 (file).
+00F5   0AAC           00336         incf    HighLEVEL       ; If HIGH button is pressed, increment low limit
+00F6   082C           00337         movf    HighLEVEL,W
+00F7   00AA           00338         movwf   LEVEL
+00F8   3001           00339         movlw   01h
+00F9   2???           00340         call    WriteEEPROM
+00FA   302E           00341         movlw   d'46'           ; Continue 3s cycle
+00FB   00AE           00342         movwf   SetCOUNT
+                      00343 
+00FC                  00344 CheckMyREGH
+00FC   1C2D           00345         btfss   MyREG,0         ; If MyReg,0 is cleared, 3 seconds have elapsed
+00FD   2???           00346         goto    SetHighEND      ; therefore end subroutine, else continue
+                      00347 
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00FE   3003           00348         movlw   d'3'
+00FF   00A9           00349         movwf   DELLOOP         ; 1s delay for flashing
+0100                  00350 HighDeb3
+0100   2???           00351         call    Delay           ; 340ms*3 = 1.02s
+Message[305]: Using default destination of 1 (file).
+0101   0BA9           00352         decfsz  DELLOOP         ; Button debouncing
+0102   2???           00353         goto    HighDeb3
+0103   2???           00354         goto    HighLoop         ; Repeat loop until Timer2 interrupt (3 second have elapsed)
+                      00355 
+0104                  00356 SetHighEND
+0104   1112           00357         bcf     T2CON,TMR2ON    ; Turn off Timer2
+0105   168B           00358         bsf     INTCON,T0IE     ; Enable Timer0 Overflow Interrupt (Back to normal operation)
+0106   0008           00359         return
+                      00360 ;*******************************************************************************
+                      00361 ;*******************************/SET TEMP***************************************
+                      00362 
+                      00363 ;**********VALIDATE LIMITS******************************************************
+0107                  00364 ValidateLimits  
+0107   022C           00365         subwf   HighLEVEL,W
+0108   1C03           00366         btfss   STATUS,C
+0109   2???           00367         goto    AlarmONH
+                      00368         
+010A   0830           00369         movf    W_TEMP2,W
+010B   022B           00370         subwf   LowLEVEL,W
+010C   1C83           00371         btfss   STATUS,DC
+010D   2???           00372         goto    AlarmOFF
+010E   2???           00373         goto    AlarmONL
+                      00374         
+010F                  00375 AlarmONH
+010F   1410           00376         bsf     T1CON,TMR1ON
+0110   180C           00377         btfsc   PIR1,TMR1IF
+0111   2004           00378         call    04h
+                      00379         
+0112   1CAD           00380         btfss   MyREG,1
+0113   2???           00381         goto    PWMLH
+0114   2???           00382         goto    PWMHH            
+                      00383         
+0115   1085           00384 PWMLH   bcf     PORTA,1
+0116   2???           00385         goto    ValidateLimits
+0117   1485           00386 PWMHH   bsf     PORTA,1
+0118   2???           00387         goto    ValidateLimits
+                      00388         
+0119                  00389 AlarmONL
+0119   1410           00390         bsf     T1CON,TMR1ON
+011A   180C           00391         btfsc   PIR1,TMR1IF
+011B   2004           00392         call    04h
+                      00393         
+011C   1CAD           00394         btfss   MyREG,1
+011D   2???           00395         goto    PWMLL
+011E   2???           00396         goto    PWMHL            
+                      00397         
+011F   1085           00398 PWMLL   bcf     PORTA,1
+0120   2???           00399         goto    ValidateLimits
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0121   1485           00400 PWMHL   bsf     PORTA,1
+0122   2???           00401         goto    ValidateLimits
+                      00402         
+0123                  00403 AlarmOFF
+0123   1085           00404         bcf     PORTA,1
+0124   1010           00405         bcf     T1CON,TMR1ON
+0125   0008           00406         return
+                      00407 ;*******************************************************************************
+                      00408 
+                      00409 ;**********SETUP AND ENABLE TIMER2**********************************************
+0126                  00410 SetupTMR2
+0126   1283           00411         bcf     STATUS,RP0       ; Bank0
+0127   1303           00412         bcf     STATUS,RP1
+0128   0192           00413         clrf    T2CON
+Message[305]: Using default destination of 1 (file).
+0129   0992           00414         comf    T2CON           ; Prescalar = 16, Turn on Timer2, Postscaler = 16
+012A   0191           00415         clrf    TMR2            ; Initial count value = 0
+012B   108C           00416         bcf     PIR1,TMR2IF     ; No match has occured
+012C   170B           00417         bsf     INTCON,PEIE     ; Enable peripheral interrupts
+012D   178B           00418         bsf     INTCON,GIE      ; Enable global interrupt
+012E   1683           00419         bsf     STATUS,RP0      ; Bank1
+012F   0192           00420         clrf    PR2
+Message[305]: Using default destination of 1 (file).
+0130   0992           00421         comf    PR2             ; Final count value = 255
+0131   148C           00422         bsf     PIE1,TMR2IE     ; Enale Timer2 Interrupt
+0132   1283           00423         bcf     STATUS,RP0      ; Bank0
+0133   302E           00424         movlw   d'46'
+0134   00AE           00425         movwf   SetCOUNT        ; Timer2 count value
+0135   0008           00426         return
+                      00427 ;*******************************************************************************
+                      00428 
+                      00429 ;**********ADC CONVERSION*******************************************************
+0136   1303           00430 Sample  bcf     STATUS,RP1
+0137   1283           00431         bcf     STATUS,RP0      ; Select bank 0
+0138   168B           00432         bsf     INTCON,T0IE
+0139   2???           00433         call    SampleTime          ; Acquisition delay
+013A   149F           00434         bsf     ADCON0,GO       ; Start A/D conversion cycle
+013B   189F           00435         btfsc   ADCON0,GO       ; Polling: Check if ADC is complete
+013C   2???           00436         goto    $-1
+                      00437 
+013D   1003           00438         bcf     STATUS,C
+013E   1683           00439         bsf     STATUS,RP0      ; Select bank 1
+013F   0C1E           00440         rrf     ADRESL,C        ; Divide ADC result by 2 and save result in WREG
+0140   1283           00441         bcf     STATUS,RP0      ; Select bank 0
+0141   0008           00442         return
+                      00443 ;*******************************************************************************
+                      00444 
+                      00445 ;**********LOOKUP TABLE*********************************************************
+Message[305]: Using default destination of 1 (file).
+0142   0782           00446 LookUp  addwf   PCL     ; Add counter value to PC, PC will jump to that specific line and fetch (place i
+                            n WREG) the corresponding SSD code
+0143   3440           00447         retlw   40h     ; 0         (common anode display)
+0144   3479           00448         retlw   79h     ; 1
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0145   3424           00449         retlw   24h     ; 2
+0146   3430           00450         retlw   30h     ; 3
+0147   3419           00451         retlw   19h     ; 4
+0148   3412           00452         retlw   12h     ; 5
+0149   3402           00453         retlw   02h     ; 6
+014A   3478           00454         retlw   78h     ; 7
+014B   3400           00455         retlw   00h     ; 8
+014C   3410           00456         retlw   10h     ; 9
+                      00457 ;*******************************************************************************
+                      00458 
+                      00459 ;**********BIN TO BCD***********************************************************
+014D                  00460 Bin2BcdStart
+014D   00A2           00461         movwf   REG0            ; Value will be manipulated from REG0.
+014E   01A3           00462         clrf    REG1
+014F   01A4           00463         clrf    REG2
+0150   3008           00464         movlw   08h             ; total number of iterations = 8 for 8 bits
+0151   00A6           00465         movwf   COUNT
+0152   3003           00466         movlw   b'00000011'     ; add 3 for binary to bcd
+0153   00A7           00467         movwf   ADVALUE
+0154   2???           00468 Bin2Bcd call    CheckIfGreater  ; Check if lower nibbles of REG1 and REG2 are >= 5.
+0155   1003           00469         bcf     STATUS,C            ; Clear carry flag of STATUS before every rotation.
+0156   01A5           00470         clrf    CSTATUS         ; Each iteration starts off with a clean CSTATUS.
+0157   0DA2           00471         rlf     REG0,1              ; Shift register value to the left and shift MSB to CSTATUS
+0158   1803           00472         btfsc   STATUS,C        ; via the carry flag.
+0159   0AA5           00473         incf    CSTATUS,1       ; Store carry flag of REG0 in CSTATUS.
+015A   1003           00474         bcf     STATUS,C            ;
+015B   0DA5           00475         rlf     CSTATUS,1           ; Shift register value left and reserve bit 0 for C flag of REG1
+015C   1003           00476         bcf     STATUS,C
+015D   0DA3           00477         rlf     REG1,1              ; Shift register value to the left and shift MSB to CSTATUS
+015E   1A23           00478         btfsc   REG1,04h        ; via the bit 4 in high nibble (overflow of lower nibble)
+015F   0AA5           00479         incf    CSTATUS,1       ; Store carry flag of REG1 lower nibble in CSTATUS
+0160   1003           00480         bcf     STATUS,C
+0161   0DA4           00481         rlf     REG2,1
+                      00482 
+                      00483         ; CSTATUS [X|X|X|X|X|X|X|REG0|REG1] Now CSTATUS contains the C flag for registers listed
+                      00484         ; X - Don't care
+                      00485 
+0162   18A5           00486         btfsc   CSTATUS,1       ; If bit 1 of CSTATUS is set
+0163   0AA3           00487         incf    REG1,1          ; add 1 to REG1.
+0164   1825           00488         btfsc   CSTATUS,0       ; If bit 2 of CSTATUS is set
+0165   0AA4           00489         incf    REG2,1          ; add 1 to REG2
+0166   0BA6           00490         decfsz  COUNT,1         ; while COUNT != 0 from 8
+0167   2???           00491         goto    Bin2Bcd         ; do next iteration
+                      00492 
+0168                  00493 Concatenate
+                      00494 ; Now combine the low nibbles of REG1 and REG2 and store result in WREG
+0168   300F           00495         movlw   b'00001111'
+0169   05A3           00496         andwf   REG1,1      ; Block out the high nibbles
+016A   05A4           00497         andwf   REG2,1      ;
+016B   0E24           00498         swapf   REG2,0      ; Low nibble of REG2 should be the high nibble
+016C   0723           00499         addwf   REG1,0      ; of WREG
+016D   0008           00500         return
+                      00501 ;*******************************************************************************
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00502 
+                      00503 ;**********CHECK IF GREATER THAN 5**********************************************
+016E                  00504 CheckIfGreater
+016E   0823           00505 Check1  movf    REG1,0
+016F   390F           00506         andlw   b'00001111'     ; Only need the lower niblle
+0170   3C05           00507         sublw   05h
+0171   1903           00508         btfsc   STATUS,Z        ; If DC flag = 1, value > 5
+0172   2???           00509         goto    add3to1
+0173   1C03           00510         btfss   STATUS,C        ; If carry flag = 0, value = 5
+0174   2???           00511         goto    add3to1
+0175   2???           00512         goto    Check2
+                      00513 
+0176   0827           00514 add3to1 movf    ADVALUE,0
+0177   07A3           00515         addwf   REG1,1
+                      00516 
+0178   0824           00517 Check2  movf    REG2,0
+0179   390F           00518         andlw   b'00001111'     ; Only need the lower niblle
+017A   3C05           00519         sublw   05h
+017B   1903           00520         btfsc   STATUS,Z        ; If DC flag = 1, value > 5
+017C   2???           00521         goto    add3to2
+017D   1C03           00522         btfss   STATUS,C        ; If carry flag = 0, value = 5
+017E   2???           00523         goto    add3to2
+017F   2???           00524         goto    CheckIfGreaterEnd
+                      00525 
+0180   0827           00526 add3to2 movf    ADVALUE,0
+0181   07A4           00527         addwf   REG2,1
+                      00528 
+0182                  00529 CheckIfGreaterEnd
+0182   0008           00530         return
+                      00531 ;*******************************************************************************
+                      00532 
+                      00533 ;**********DELAY 1MS************************************************************
+0183   30FA           00534 Del1ms  movlw   d'250'      ; Initial value
+0184   3EFF           00535 loop1ms addlw   d'255'      ; Dec WREG
+0185   1D03           00536         btfss   STATUS,Z    ; Zero flag set?
+0186   2???           00537         goto    loop1ms     ; No, keep looping
+0187   0008           00538         return              ; Yes, 1ms done
+                      00539 ;*******************************************************************************
+                      00540 
+                      00541 ;**********340ms DELAY**********************************************************
+0188   30FF           00542 Delay   movlw   d'255'
+0189   00A6           00543         movwf   COUNT
+018A   30FA           00544 Begin   movlw   d'250'      ; Initial value
+018B   3EFF           00545 loopDel addlw   d'255'      ; Dec WREG
+018C   1D03           00546         btfss   STATUS,Z    ; Zero flag set?
+018D   2???           00547         goto    loopDel     ; No, keep looping
+Message[305]: Using default destination of 1 (file).
+018E   0BA6           00548         decfsz  COUNT
+018F   2???           00549         goto    Begin
+0190   0008           00550         return              ; Yes, 340ms done
+                      00551 ;*******************************************************************************
+                      00552 
+                      00553 ;**********Acquisition DELAY****************************************************
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0191                  00554 SampleTime
+0191   0000           00555         nop
+0192   0000           00556         nop
+0193   0000           00557         nop
+0194   0000           00558         nop
+0195   0000           00559         nop
+0196   0000           00560         nop
+0197   0008           00561         return
+                      00562 ;*******************************************************************************
+33C4                  00563         end
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ABDEN                             00000000
+ABDOVF                            00000007
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000004
+ADCS1                             00000005
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+ADVALUE                           00000027
+ANS0                              00000000
+ANS1                              00000001
+ANS10                             00000002
+ANS11                             00000003
+ANS2                              00000002
+ANS3                              00000003
+ANS4                              00000004
+ANS5                              00000005
+ANS6                              00000006
+ANS7                              00000007
+ANS8                              00000000
+ANS9                              00000001
+ANSEL                             0000011E
+ANSELH                            0000011F
+AlarmOFF                          00000123
+AlarmONH                          0000010F
+AlarmONL                          00000119
+BAUDCTL                           0000009B
+BF                                00000000
+BRG0                              00000000
+BRG1                              00000001
+BRG10                             00000002
+BRG11                             00000003
+BRG12                             00000004
+BRG13                             00000005
+BRG14                             00000006
+BRG15                             00000007
+BRG16                             00000003
+BRG2                              00000002
+BRG3                              00000003
+BRG4                              00000004
+BRG5                              00000005
+BRG6                              00000006
+BRG7                              00000007
+BRG8                              00000000
+BRG9                              00000001
+BRGH                              00000002
+Begin                             0000018A
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 14
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+Bin2Bcd                           00000154
+Bin2BcdStart                      0000014D
+C                                 00000000
+C1CH0                             00000000
+C1CH1                             00000001
+C1IE                              00000005
+C1IF                              00000005
+C1OE                              00000005
+C1ON                              00000007
+C1OUT                             00000006
+C1POL                             00000004
+C1R                               00000002
+C1SEN                             00000005
+C1VREN                            00000007
+C2CH0                             00000000
+C2CH1                             00000001
+C2IE                              00000006
+C2IF                              00000006
+C2OE                              00000005
+C2ON                              00000007
+C2OUT                             00000006
+C2POL                             00000004
+C2R                               00000002
+C2REN                             00000004
+C2SYNC                            00000000
+C2VREN                            00000006
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCPR                              00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CKE                               00000006
+CKP                               00000004
+CM1CON0                           00000119
+CM2CON0                           0000011A
+CM2CON1                           0000011B
+COUNT                             00000026
+CREN                              00000004
+CSRC                              00000007
+CSTATUS                           00000025
+Check1                            0000016E
+Check2                            00000178
+CheckB7                           000000B9
+CheckB7H                          000000F3
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 15
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CheckIfGreater                    0000016E
+CheckIfGreaterEnd                 00000182
+CheckMyREG                        000000C2
+CheckMyREGH                       000000FC
+Concatenate                       00000168
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DELLOOP                           00000029
+D_A                               00000005
+D_NOT_A                           00000005
+Del1ms                            00000183
+Delay                             00000188
+ECCPAS                            0000001D
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDAT                             0000010C
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FERR                              00000002
+FSR                               00000004
+GIE                               00000007
+GO                                00000001
+GO_DONE                           00000001
+GO_NOT_DONE                       00000001
+HTS                               00000002
+HighDeb1                          000000D0
+HighDeb2                          000000E6
+HighDeb3                          00000100
+HighLEVEL                         0000002C
+HighLoop                          000000D6
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOC                               00000096
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 16
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+IOC0                              00000000
+IOC1                              00000001
+IOC2                              00000002
+IOC3                              00000003
+IOC4                              00000004
+IOC5                              00000005
+IOCA                              00000096
+IOCA0                             00000000
+IOCA1                             00000001
+IOCA2                             00000002
+IOCA3                             00000003
+IOCA4                             00000004
+IOCA5                             00000005
+IOCB                              00000116
+IOCB4                             00000004
+IOCB5                             00000005
+IOCB6                             00000006
+IOCB7                             00000007
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRP                               00000007
+ISREND                            0000002C
+LEVEL                             0000002A
+LTS                               00000001
+LoadW                             0000008F
+LookUp                            00000142
+Loop                              0000004E
+LowDeb1                           00000096
+LowDeb2                           000000AC
+LowDeb3                           000000C6
+LowLEVEL                          0000002B
+LowLoop                           0000009C
+MC1OUT                            00000007
+MC2OUT                            00000006
+MSK                               00000093
+MSK0                              00000000
+MSK1                              00000001
+MSK2                              00000002
+MSK3                              00000003
+MSK4                              00000004
+MSK5                              00000005
+MSK6                              00000006
+MSK7                              00000007
+MyREG                             0000002D
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RABPU                         00000007
+NOT_T1SYNC                        00000002
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+NOT_TO                            00000004
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OERR                              00000001
+OPTION_REG                        00000081
+OSCCON                            0000008F
+OSCTUNE                           00000090
+OSFIE                             00000007
+OSFIF                             00000007
+OSTS                              00000003
+P                                 00000004
+P1M0                              00000006
+P1M1                              00000007
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+PEIE                              00000006
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PR2                               00000092
+PRSEN                             00000007
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSSAC0                            00000002
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PSTRCON                           0000019D
+PULSR                             00000002
+PULSS                             00000003
+PWM1CON                           0000001C
+PWMHH                             00000117
+PWMHL                             00000121
+PWMLH                             00000115
+PWMLL                             0000011F
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 18
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RABIE                             00000003
+RABIF                             00000000
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+READ_WRITE                        00000002
+REG0                              00000022
+REG1                              00000023
+REG2                              00000024
+RP0                               00000005
+RP1                               00000006
+RX9                               00000006
+RX9D                              00000000
+R_NOT_W                           00000002
+R_W                               00000002
+ReadEEPROM                        0000006B
+S                                 00000003
+SBOREN                            00000004
+SCKP                              00000004
+SCS                               00000000
+SENB                              00000003
+SENDB                             00000003
+SMP                               00000007
+SPBRG                             00000099
+SPBRGH                            0000009A
+SPEN                              00000007
+SR0                               00000006
+SR1                               00000007
+SRCON                             0000019E
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPEN                             00000005
+SSPIE                             00000003
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 19
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPMSK                            00000093
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+STRA                              00000000
+STRB                              00000001
+STRC                              00000002
+STRD                              00000003
+STRSYNC                           00000004
+SWDTEN                            00000000
+SYNC                              00000004
+Sample                            00000136
+SampleTime                        00000191
+SetAlarm                          0000002F
+SetCOUNT                          0000002E
+SetHigh                           000000CD
+SetHighEND                        00000104
+SetLow                            00000093
+SetLowEND                         000000CA
+Setup                             00000032
+SetupTMR2                         00000126
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1GINV                            00000007
+T1GSS                             00000001
+T1IE                              00000000
+T1IF                              00000000
+T1OSCEN                           00000003
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+T2IE                              00000001
+T2IF                              00000001
+TENS                              00000021
+TMR0                              00000001
+TMR0ISR                           0000000F
+TMR1                              0000000E
+TMR1CS                            00000001
+TMR1GE                            00000006
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1ISR                           00000020
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 20
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ISR                           00000027
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRMT                              00000001
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TX9                               00000006
+TX9D                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+ULPWUE                            00000005
+UNITS                             00000020
+VCFG                              00000006
+VP6EN                             00000004
+VR0                               00000000
+VR1                               00000001
+VR2                               00000002
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 21
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+VR3                               00000003
+VRCON                             00000118
+VRR                               00000005
+ValidateLimits                    00000107
+W                                 00000000
+WCOL                              00000007
+WDTCON                            00000097
+WDTPS0                            00000001
+WDTPS1                            00000002
+WDTPS2                            00000003
+WDTPS3                            00000004
+WPU                               00000095
+WPU0                              00000000
+WPU1                              00000001
+WPU2                              00000002
+WPU4                              00000004
+WPU5                              00000005
+WPUA                              00000095
+WPUA0                             00000000
+WPUA1                             00000001
+WPUA2                             00000002
+WPUA4                             00000004
+WPUA5                             00000005
+WPUB                              00000115
+WPUB4                             00000004
+WPUB5                             00000005
+WPUB6                             00000006
+WPUB7                             00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+WUE                               00000001
+W_TEMP                            00000028
+W_TEMP2                           00000030
+WriteEEPROM                       00000077
+Z                                 00000002
+_.org_2_0084                      00000084
+_.org_2_013C                      0000013C
+_BOD_NSLEEP                       00003EFF
+_BOD_OFF                          00003CFF
+_BOD_ON                           00003FFF
+_BOD_SBODEN                       00003DFF
+_BOREN_NSLEEP                     00003EFF
+_BOREN_OFF                        00003CFF
+_BOREN_ON                         00003FFF
+_BOREN_SBODEN                     00003DFF
+_BOR_NSLEEP                       00003EFF
+_BOR_OFF                          00003CFF
+_BOR_ON                           00003FFF
+_BOR_SBODEN                       00003DFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003F7F
+MPASM 5.62                      D_THERMO.ASM   9-28-2015  22:47:41         PAGE 22
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_CP_OFF                           00003FFF
+_CP_ON                            00003FBF
+_DEVID1                           00002006
+_EC_OSC                           00003FFB
+_EXTRC                            00003FFF
+_EXTRCIO                          00003FFE
+_EXTRC_OSC_CLKOUT                 00003FFF
+_EXTRC_OSC_NOCLKOUT               00003FFE
+_FCMEN_OFF                        000037FF
+_FCMEN_ON                         00003FFF
+_FOSC_EC                          00003FFB
+_FOSC_EXTRCCLK                    00003FFF
+_FOSC_EXTRCIO                     00003FFE
+_FOSC_HS                          00003FFA
+_FOSC_INTRCCLK                    00003FFD
+_FOSC_INTRCIO                     00003FFC
+_FOSC_LP                          00003FF8
+_FOSC_XT                          00003FF9
+_HS_OSC                           00003FFA
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_IESO_OFF                         00003BFF
+_IESO_ON                          00003FFF
+_INTOSC                           00003FFD
+_INTOSCIO                         00003FFC
+_INTRC_OSC_CLKOUT                 00003FFD
+_INTRC_OSC_NOCLKOUT               00003FFC
+_LP_OSC                           00003FF8
+_MCLRE_OFF                        00003FDF
+_MCLRE_ON                         00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FEF
+_WDTE_OFF                         00003FF7
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FF7
+_WDT_ON                           00003FFF
+_XT_OSC                           00003FF9
+__16F690                          00000001
+add3to1                           00000176
+add3to2                           00000180
+loop1ms                           00000184
+loopDel                           0000018B
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :    17 reported,    24 suppressed
+
+
